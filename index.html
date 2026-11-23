@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Birthday site for Maryeme — single page, vanilla JS, no build step. Edit CONFIG in the script. -->
+<title>For Maryeme</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Amiri:ital@0;1&display=swap">
+<style>
+/* ===== LAYOUT: mobile-first column (max 480px) centered on a burgundy ground.
+   Screens: #gate (oui/non) -> #intro (velvet curtains) -> #scrap (scrapbook scroll) ===== */
+:root{
+  --wine-950:#1d030e; --wine-900:#2e0618; --wine-800:#3d0a22; --wine-700:#560f2e; --wine-600:#6e1a3b;
+  --paper:#ebe6dc; --paper-2:#d8d0c2; --blush:#e9cdd3; --rose:#b45a72; --gold:#e2c27c; --gold-2:#b98e3f;
+  --silver:#cfcfca; --ink:#4a0b27;
+  --script:'Pinyon Script','Snell Roundhand',cursive;
+  --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+  --arabic:'Amiri','Traditional Arabic',serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--wine-800);color:var(--paper);font-family:var(--serif);overflow-x:hidden}
+body{padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.screen{position:fixed;inset:0;z-index:20;overflow:hidden}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+
+/* ---------- GATE ---------- */
+#gate{background:radial-gradient(ellipse at 50% 30%,#5a1031 0,var(--wine-800) 55%,var(--wine-950) 100%);display:grid;place-items:center;transition:opacity .9s}
+#gate.out{opacity:0;pointer-events:none}
+.gate-card{position:relative;text-align:center;padding:0 24px;max-width:420px;width:100%}
+.gate-heart{width:130px;margin:0 auto 10px;filter:drop-shadow(0 12px 22px rgba(0,0,0,.45));animation:beat 2.2s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.07) rotate(2deg)}}
+.cap{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--blush);opacity:.85}
+.gate-title{font-family:var(--script);font-size:46px;line-height:1.05;margin:10px 0 6px;color:var(--paper);text-shadow:0 2px 18px rgba(233,205,211,.25)}
+.gate-sub{font-size:22px;font-style:italic;margin:0 0 26px;color:var(--blush)}
+.gate-btns{display:flex;gap:18px;justify-content:center;align-items:center;min-height:64px}
+.btn-yes,.btn-no{font-size:20px;letter-spacing:.14em;text-transform:uppercase;padding:14px 34px;border-radius:999px;transition:transform .25s,box-shadow .25s;font-weight:600}
+.btn-yes{background:linear-gradient(180deg,#f3e9dd,#d9cdbb);color:var(--ink);box-shadow:0 8px 26px rgba(0,0,0,.4),inset 0 0 0 2px rgba(110,26,59,.15);transform-origin:center}
+.btn-yes:hover{box-shadow:0 10px 34px rgba(233,205,211,.45)}
+.btn-no{border:1.5px solid rgba(233,205,211,.55);color:var(--blush);background:rgba(0,0,0,.18);transition:left .35s cubic-bezier(.34,1.56,.64,1),top .35s cubic-bezier(.34,1.56,.64,1)}
+.btn-no.fled{position:fixed;z-index:30}
+.gate-msg{min-height:58px;margin:22px auto 0;max-width:340px;font-size:20px;font-style:italic;color:#ffd9e0;line-height:1.3}
+.gate-msg.pop{animation:shake .5s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+/* ---------- INTRO (velvet curtains) ---------- */
+#intro{background:#12020a;opacity:0;visibility:hidden;transition:opacity 1s}
+#intro.on{opacity:1;visibility:visible}
+#intro.off{opacity:0;transition:opacity 1.4s}
+.hall{position:absolute;inset:0}
+.hall svg{position:absolute;inset:0;width:100%;height:100%}
+.cur{position:absolute;top:0;bottom:0;width:54%;transition:transform 3.6s cubic-bezier(.65,0,.25,1);will-change:transform}
+.cur.l{left:0;transform-origin:left center}.cur.r{right:0;transform-origin:right center}
+.cur.open{transform:scaleX(.2)}
+.cur .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.55),transparent 28%,transparent 62%,rgba(0,0,0,.5))}
+.cur.l::after,.cur.r::after{content:"";position:absolute;top:0;bottom:0;width:34px}
+.cur.l::after{right:0;background:linear-gradient(90deg,transparent,rgba(255,120,130,.16))}
+.cur.r::after{left:0;background:linear-gradient(270deg,transparent,rgba(255,120,130,.16))}
+.valance{position:absolute;left:-2%;top:-1px;width:104%;height:21%;pointer-events:none;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6))}
+.itext{position:absolute;left:0;right:0;top:22%;text-align:center;color:var(--gold);pointer-events:none;display:flex;flex-direction:column;align-items:center}
+.itext>*{opacity:0;transform:translateY(10px);transition:opacity 1.3s,transform 1.3s}
+.itext>.show{opacity:1;transform:none}
+.i-small{font-size:clamp(14px,4vw,20px);letter-spacing:.12em;text-shadow:0 0 12px rgba(226,194,124,.6)}
+.i-big{font-family:var(--script);font-size:clamp(38px,12.5vw,66px);white-space:nowrap;line-height:1;background:linear-gradient(100deg,#b98e3f,#f6e2a8 40%,#c99a49 60%,#f3d98f);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 10px rgba(0,0,0,.5));padding:0 .15em}
+.i-photo{width:clamp(110px,34vw,170px);aspect-ratio:3/4;margin:2.2vh 0 .5vh;border-radius:999px 999px 14px 14px;padding:5px;background:linear-gradient(135deg,#f6e2a8,#b98e3f 50%,#f3d98f);box-shadow:0 0 40px rgba(226,194,124,.45),0 14px 30px rgba(0,0,0,.6)}
+.i-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 25%;border-radius:999px 999px 10px 10px;display:block}
+.i-skip{position:absolute;bottom:max(14px,env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);opacity:0;transition:opacity 1s}
+.i-skip.show{opacity:.7}
+
+/* ---------- SCRAPBOOK ---------- */
+#scrap{display:none;position:relative;z-index:10;min-height:100vh;background:radial-gradient(ellipse at 50% 0,#4d0d2a 0,var(--wine-800) 60%,var(--wine-900) 100%)}
+#scrap.on{display:block;animation:fadein 1.6s}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.stage{--s:min(100vw,480px);font-size:calc(var(--s)/36);width:var(--s);margin:0 auto;position:relative;height:118em;overflow:hidden}
+.stage>*{position:absolute}
+.stage svg{display:block;overflow:visible}
+.rv{opacity:0;transition:opacity 1.1s,transform 1.1s cubic-bezier(.2,.8,.2,1)}
+.rv.in{opacity:1;transform:var(--t,none)}
+.hit{cursor:pointer;transition:filter .3s}
+.hit:hover{filter:brightness(1.08) drop-shadow(0 0 14px rgba(233,205,211,.35))}
+.hit:focus-visible{outline:2px solid var(--gold);outline-offset:6px;border-radius:12px}
+.lbl-script{font-family:var(--script);color:var(--ink);line-height:.95}
+.lbl-cap{font-size:1.25em;letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
+.oval-txt{left:16.2em;top:0;width:18em;height:25.6em;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;padding-top:.6em}
+.oval-txt .cap{color:var(--ink);font-size:.9em;letter-spacing:.14em;opacity:.9;line-height:1.7}
+.oval-txt .nm{font-family:var(--script);font-size:3.9em;color:#6b1230;line-height:1.02;margin:.35em 0 .3em;transform:rotate(-6deg)}
+.vinyl{animation:spin 6s linear infinite;animation-play-state:paused;transform-origin:center;transform-box:fill-box}
+.playing .vinyl{animation-play-state:running}
+@keyframes spin{to{transform:rotate(360deg)}}
+.strip{left:23.6em;top:22.8em;width:9.6em;transform:rotate(3deg);background:#f4f0e8;padding:.7em .7em 2.4em;box-shadow:0 .6em 1.4em rgba(0,0,0,.45)}
+.strip div{aspect-ratio:4/5;margin-bottom:.45em;background-size:cover;background-position:center;filter:grayscale(1) contrast(1.08) sepia(.12)}
+.strip div:last-child{margin-bottom:0}
+.polaroid{background:#f4f0e8;padding:.9em .9em 3em;box-shadow:0 .7em 1.6em rgba(0,0,0,.5)}
+.polaroid img,.polaroid .ph{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}
+.finale{left:3em;width:30em;top:84em;text-align:center}
+.finale .cap{font-size:1.2em}
+.finale h2{font-family:var(--script);font-weight:400;font-size:5.6em;margin:.1em 0 .1em;color:var(--paper);line-height:1.05}
+.finale p{font-size:1.9em;font-style:italic;color:var(--blush);margin:.4em 0}
+.cake-wrap{width:20em;margin:1em auto 0}
+
+/* ---------- MODAL ---------- */
+#modal{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(20,2,10,.78);backdrop-filter:blur(6px)}
+#modal.on{display:flex;animation:fadein .4s}
+.sheet{position:relative;width:min(440px,100%);max-height:88vh;overflow:auto;background:linear-gradient(160deg,#f1ece2,#e3dacb);color:var(--ink);border-radius:22px;padding:34px 26px 30px;box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 0 0 7px #f1ece2,inset 0 0 0 8px rgba(110,26,59,.35);animation:rise .6s cubic-bezier(.2,.9,.3,1)}
+@keyframes rise{from{transform:translateY(40px) scale(.96);opacity:0}}
+.sheet h3{font-family:var(--script);font-weight:400;font-size:46px;margin:0 0 10px;text-align:center;color:#6b1230;line-height:1.05}
+.x{position:absolute;top:12px;right:16px;font-size:30px;line-height:1;color:var(--wine-600);padding:6px}
+.rs{display:grid;gap:12px}
+.rs div{padding:12px 14px;border-radius:14px;background:rgba(110,26,59,.07);opacity:0;animation:fadein .8s forwards}
+.rs b{font-family:var(--script);font-weight:400;font-size:28px;color:#6b1230;display:block;line-height:1.1}
+.rs span{font-size:19px;line-height:1.3}
+.letter p{font-size:21px;line-height:1.45;margin:0 0 12px;opacity:0;animation:fadein 1s forwards}
+.letter .ar{font-family:var(--arabic);font-size:26px;text-align:center;direction:rtl;color:#6b1230}
+.letter .sig{font-family:var(--script);font-size:38px;text-align:right;color:#6b1230}
+.gal{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 4px 10px}
+.gal figure{margin:0;flex:0 0 78%;scroll-snap-align:center;background:#fbf8f2;padding:10px 10px 14px;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.gal figure:nth-child(odd){transform:rotate(-2deg)}.gal figure:nth-child(even){transform:rotate(2deg)}
+.gal img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.gal figcaption{font-family:var(--script);font-size:26px;text-align:center;margin-top:8px;color:#6b1230}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+</style>
+<canvas id="fx"></canvas>
+<audio id="bgm" preload="auto" src="music/breath.mp3"></audio>
+
+<!-- GATE: surprise confirmation -->
+<section id="gate" class="screen" aria-label="Surprise">
+  <div class="gate-card">
+    <svg class="gate-heart" viewBox="0 0 100 90" id="gateHeart" aria-hidden="true"></svg>
+    <div class="cap" id="gCap"></div>
+    <h1 class="gate-title" id="gTitle"></h1>
+    <p class="gate-sub" id="gSub"></p>
+    <div class="gate-btns" id="gBtns">
+      <button class="btn-yes" id="yes" type="button">Oui</button>
+      <button class="btn-no" id="no" type="button">Non</button>
+    </div>
+    <div class="gate-msg" id="gMsg" role="status" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- INTRO: velvet curtains + Happy Birthday -->
+<section id="intro" class="screen" aria-label="Happy Birthday">
+  <div class="hall" id="hall"></div>
+  <div class="itext" id="itext">
+    <div class="i-small" id="iSmall"></div>
+    <div class="i-big" id="iBig"></div>
+    <div class="i-photo"><img id="iImg" alt="Maryeme" src="img/captain.jpg"></div>
+    <div class="i-big" id="iName"></div>
+  </div>
+  <div class="cur l" id="curL"></div><div class="cur r" id="curR"></div>
+  <svg class="valance" id="valance" viewBox="0 0 360 120" preserveAspectRatio="none" aria-hidden="true"></svg>
+  <div class="i-skip" id="iSkip">touche pour continuer</div>
+</section>
+
+<!-- SCRAPBOOK -->
+<main id="scrap"><div class="stage" id="stage"></div></main>
+
+<!-- MODAL -->
+<div id="modal" role="dialog" aria-modal="true"><div class="sheet" id="sheet"></div></div>
+<script>
+/* =====================================================================
+   CONFIG — everything you may want to edit is here (texts, names, music)
+   ===================================================================== */
+const CONFIG = {
+  name: 'Maryeme', from: 'Saloua',
+  music: { start: 15, volume: 0.85 },           // Дагестан — SABINA, starts at 0:25
+  gate: {
+    cap: 'une petite surprise', title: '9adit lik mofaja2a', sub: 'Wach tbghi tchofha ?',
+    // messages shown when someone catches the "Non" button
+    annoying: [
+      'maygan ghila ohoooooooo 🥺'
+    ]
+  },
+  intro: { small: 'Happy Birthday', big: 'ma sweetheart' },
+  oval: { top: ['JOIN ME TO CELEBRATE', 'THE BIRTHDAY OF'], bottom: ['MY FAVORITE', 'PERSON EVER'] },
+  reasons: [
+    ['Ton rire', 'Il rend n\'importe quelle journée plus légère.'],
+    ['Ta présence', 'Tu es toujours là, même quand je ne le dis pas.'],
+    ['Ta sincérité', 'Avec toi, pas besoin de faire semblant.'],
+    ['Ton cœur', 'Tu donnes sans compter, et sans jamais le montrer.'],
+    ['Ton style', 'Même un jour simple devient un défilé avec toi.'],
+    ['Nous deux', 'Les petits moments à côté de toi sont mes préférés.']
+  ],
+  letter: [
+    'Ma chère Maryeme,',
+    'Aujourd\'hui c\'est ton jour, et honnêtement le monde entier devrait s\'arrêter pour te fêter.',
+    'Merci d\'être cette amie qui écoute sans juger, qui rit avec moi, et qui reste dans les moments difficiles. Avec toi, les choses simples deviennent des souvenirs précieux.',
+    'Je te souhaite une année douce, pleine de lumière, de réussites, de paix et de rires qui font mal aux joues. Que tous tes rêves trouvent leur chemin.',
+    '<span class="ar">عيد ميلاد سعيد يا غالية، كل عام وأنتِ بخير</span>',
+    'Je t\'aime fort, hbibti ♡'
+  ],
+  memories: [['captain','Capitaine de mon cœur'],['beach','Golden hour'],['mirror','Toujours élégante']]
+};
+const $ = (s, r = document) => r.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* shared heart path (viewBox 0 0 100 90) */
+const HEART = 'M50 86 C4 56 -6 20 22 8 C38 1 50 11 50 23 C50 11 62 1 78 8 C106 20 96 56 50 86 Z';
+
+/* =====================================================================
+   FX — one fixed canvas: petals, sparkle trail, confetti bursts
+   ===================================================================== */
+const FX = (() => {
+  const cv = $('#fx'), ctx = cv.getContext('2d'); let W, H, DPR, ps = [], ambient = false;
+  const fit = () => { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0); };
+  addEventListener('resize', fit); fit();
+  const R = (a, b) => a + Math.random() * (b - a);
+  const COL = ['#e9a3b5', '#c44a6b', '#f3d9de', '#e2c27c', '#a0213f', '#fff'];
+  function add(p) { if (ps.length < 700) ps.push(p); }
+  function petal(x, y) { add({ k: 'petal', x, y, vx: R(-.3, .5), vy: R(.5, 1.4), r: R(5, 10), a: R(0, 6), va: R(-.03, .03), c: ['#b3274b', '#8d1536', '#d65a78'][Math.random() * 3 | 0], life: 1e9, sw: R(0, 6) }); }
+  function burst(x, y, n = 90) { for (let i = 0; i < n; i++) { const a = R(0, 6.28), s = R(3, 11); add({ k: Math.random() < .35 ? 'heart' : 'conf', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 4, g: .22, r: R(4, 9), a: R(0, 6), va: R(-.2, .2), c: COL[Math.random() * COL.length | 0], life: R(70, 140) }); } }
+  function spark(x, y) { add({ k: 'spark', x, y, vx: R(-.6, .6), vy: R(-.2, 1), r: R(2, 5.5), c: Math.random() < .5 ? '#f6e2a8' : '#f3b6c4', life: R(25, 45), max: 45 }); }
+  function drawHeart(r) { ctx.beginPath(); ctx.moveTo(0, r * .9); ctx.bezierCurveTo(-r * 1.6, -r * .1, -r * .6, -r * 1.2, 0, -r * .4); ctx.bezierCurveTo(r * .6, -r * 1.2, r * 1.6, -r * .1, 0, r * .9); ctx.fill(); }
+  function tick() {
+    ctx.clearRect(0, 0, W, H);
+    if (ambient && !reduce && Math.random() < .08) petal(R(0, W), -12);
+    for (let i = ps.length - 1; i >= 0; i--) {
+      const p = ps[i]; p.life--; p.x += p.vx; p.y += p.vy;
+      if (p.g) p.vy += p.g; if (p.va) p.a += p.va;
+      if (p.k === 'petal') { p.sw += .03; p.x += Math.sin(p.sw) * .6; }
+      if (p.life <= 0 || p.y > H + 30) { ps.splice(i, 1); continue; }
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a || 0);
+      if (p.k === 'spark') { ctx.globalAlpha = p.life / p.max; ctx.fillStyle = p.c; ctx.shadowColor = p.c; ctx.shadowBlur = 8; const r = p.r; ctx.beginPath(); ctx.moveTo(0, -r * 2); ctx.lineTo(r * .5, -r * .5); ctx.lineTo(r * 2, 0); ctx.lineTo(r * .5, r * .5); ctx.lineTo(0, r * 2); ctx.lineTo(-r * .5, r * .5); ctx.lineTo(-r * 2, 0); ctx.lineTo(-r * .5, -r * .5); ctx.fill(); }
+      else { ctx.globalAlpha = Math.min(1, p.life / 30); ctx.fillStyle = p.c; if (p.k === 'petal') { ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * .55, 0, 0, 6.3); ctx.fill(); } else if (p.k === 'heart') drawHeart(p.r); else ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); }
+      ctx.restore();
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+  let last = 0;
+  addEventListener('pointermove', e => { const t = performance.now(); if (t - last > 28 && !reduce) { last = t; spark(e.clientX, e.clientY); } }, { passive: true });
+  addEventListener('pointerdown', e => { for (let i = 0; i < 6; i++) spark(e.clientX, e.clientY); }, { passive: true });
+  return { burst, setAmbient: v => ambient = v, petals(n) { for (let i = 0; i < n; i++) petal(R(0, W), R(-H, 0)); } };
+})();
+
+/* =====================================================================
+   MUSIC — starts on the "Oui" click (browser rule), jumps to 0:25, loops from 0:25
+   ===================================================================== */
+const Music = (() => {
+  const a = $('#bgm'); let ok = true, want = false;
+  a.addEventListener('error', () => { ok = false; });
+  const seek = () => { try { a.currentTime = CONFIG.music.start; } catch (e) { } };
+  a.addEventListener('ended', () => { seek(); a.play().catch(() => { }); });
+  async function play() {
+    want = true; a.volume = 0;
+    if (a.readyState < 1) await new Promise(r => { a.addEventListener('loadedmetadata', r, { once: true }); setTimeout(r, 2500); });
+    if (a.currentTime < CONFIG.music.start - .5) seek();
+    try { await a.play(); } catch (e) { return; }
+    let v = 0; const f = setInterval(() => { v = Math.min(CONFIG.music.volume, v + .05); a.volume = v; if (v >= CONFIG.music.volume) clearInterval(f); }, 90);
+    document.body.classList.add('playing');
+  }
+  function pause() { want = false; a.pause(); document.body.classList.remove('playing'); }
+  return { play, pause, toggle() { a.paused ? play() : pause(); }, get ok() { return ok; } };
+})();
+</script>
+<script>
+/* =====================================================================
+   GATE — "9adit lik mofaja2a" with Oui / Non (Non runs away, nags if caught)
+   ===================================================================== */
+(function gate() {
+  const g = CONFIG.gate, yes = $('#yes'), no = $('#no'), msg = $('#gMsg');
+  $('#gCap').textContent = g.cap; $('#gTitle').textContent = g.title; $('#gSub').textContent = g.sub;
+  $('#gateHeart').innerHTML = `<defs><radialGradient id="gh" cx="40%" cy="30%"><stop offset="0" stop-color="#8a2549"/><stop offset="1" stop-color="#4a0b27"/></radialGradient></defs>
+    <path d="${HEART}" fill="none" stroke="#f1e6e8" stroke-opacity=".85" stroke-width="9" stroke-dasharray="0.1 6.5" stroke-linecap="round"/>
+    <path d="${HEART}" fill="url(#gh)" stroke="#e9cdd3" stroke-opacity=".4" stroke-width="1.2" transform="translate(5 4.5) scale(.9)"/>
+    <text x="50" y="52" text-anchor="middle" font-family="Pinyon Script,cursive" font-size="26" fill="#f1e6e8">M</text>`;
+  let dodges = 0, caught = 0; const MAX = 7;
+  const R = (a, b) => a + Math.random() * (b - a);
+  function flee(px, py) {
+    if (dodges >= MAX) return;
+    dodges++; const b = no.getBoundingClientRect(), w = b.width, h = b.height, ym = yes.getBoundingClientRect();
+    let x, y, n = 0;
+    do { x = R(16, innerWidth - w - 16); y = R(16, innerHeight - h - 16); n++; }
+    while (n < 40 && (Math.hypot(x + w / 2 - px, y + h / 2 - py) < 170 || (x < ym.right + 20 && x + w > ym.left - 20 && y < ym.bottom + 20 && y + h > ym.top - 20)));
+    no.classList.add('fled'); no.style.left = x + 'px'; no.style.top = y + 'px';
+    if (dodges >= MAX) { msg.textContent = 'maygan ghila ohoooooooo 🥺'; }
+  }
+  document.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch' || $('#gate').classList.contains('out')) return;
+    const b = no.getBoundingClientRect();
+    if (Math.hypot(e.clientX - (b.left + b.width / 2), e.clientY - (b.top + b.height / 2)) < Math.max(110, b.width)) flee(e.clientX, e.clientY);
+  });
+  no.addEventListener('pointerdown', e => { if (e.pointerType === 'touch' && dodges < 3) { e.preventDefault(); flee(e.clientX, e.clientY); } });
+  no.addEventListener('focus', () => { if (dodges < 3) { const b = no.getBoundingClientRect(); flee(b.left, b.top); no.blur(); } });
+  no.addEventListener('click', () => {
+    msg.textContent = g.annoying[caught % g.annoying.length]; caught++;
+    msg.classList.remove('pop'); void msg.offsetWidth; msg.classList.add('pop');
+    yes.style.transform = `scale(${Math.min(1 + caught * .22, 1.9)})`; yes.style.margin = `0 ${caught * 8}px`;
+  });
+  yes.addEventListener('click', async () => {
+    const b = yes.getBoundingClientRect(); FX.burst(b.left + b.width / 2, b.top + b.height / 2, 120);
+    Music.play(); $('#gate').classList.add('out'); await sleep(950); $('#gate').style.display = 'none'; Intro.start();
+  });
+})();
+
+/* =====================================================================
+   INTRO — red velvet curtains open on a candle-lit staircase, then close
+   ===================================================================== */
+const Intro = (() => {
+  const E = s => document.createElementNS(NS, s);
+  /* velvet fold shading: sum of sines -> many gradient stops */
+  function velvet(seed, folds) {
+    const st = [];
+    for (let i = 0; i <= 90; i++) {
+      const x = i / 90, f = Math.sin(x * Math.PI * 2 * folds + seed) * .6 + Math.sin(x * Math.PI * 2 * folds * 2.3 + seed * 2) * .25 + Math.sin(x * 40 + seed) * .08;
+      const l = 17 + 12 * f + 6 * Math.sin(x * 6 + seed);
+      st.push(`hsl(348 78% ${Math.max(6, l).toFixed(1)}%) ${(x * 100).toFixed(1)}%`);
+    }
+    return `linear-gradient(90deg,${st.join(',')})`;
+  }
+  function buildHall() {
+    const hall = $('#hall'); const s = E('svg'); s.setAttribute('viewBox', '0 0 360 640'); s.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    let h = `<defs>
+      <radialGradient id="wall" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#e6a08e"/><stop offset=".45" stop-color="#a8404a"/><stop offset="1" stop-color="#3a0710"/></radialGradient>
+      <radialGradient id="glow"><stop offset="0" stop-color="#ffd98a" stop-opacity=".95"/><stop offset="1" stop-color="#ffb04a" stop-opacity="0"/></radialGradient>
+      <linearGradient id="gold" x1="0" x2="1"><stop offset="0" stop-color="#b98e3f"/><stop offset=".5" stop-color="#f6e2a8"/><stop offset="1" stop-color="#b98e3f"/></linearGradient>
+      <linearGradient id="stair" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7a1c2c"/><stop offset="1" stop-color="#3b0812"/></linearGradient>
+      <radialGradient id="rose" cx="40%" cy="35%"><stop offset="0" stop-color="#d8344f"/><stop offset=".6" stop-color="#8f1230"/><stop offset="1" stop-color="#4a0816"/></radialGradient></defs>
+      <rect width="360" height="640" fill="url(#wall)"/>
+      <!-- back arcade: pale arches -->
+      <g fill="#d9908a" opacity=".85"><rect x="40" y="250" width="22" height="150"/><rect x="98" y="250" width="22" height="150"/><rect x="240" y="250" width="22" height="150"/><rect x="298" y="250" width="22" height="150"/></g>
+      <path d="M130 400 V300 Q130 240 180 240 Q230 240 230 300 V400 Z" fill="#4a0b18" stroke="#e3a89a" stroke-width="10"/>
+      <path d="M142 400 V305 Q142 252 180 252 Q218 252 218 305 V400" fill="none" stroke="#7a2230" stroke-width="3"/>
+      <rect x="0" y="392" width="360" height="30" fill="#8c2b3a"/><rect x="0" y="388" width="360" height="6" fill="#d9908a" opacity=".8"/>`;
+    /* staircase in perspective + candles */
+    for (let i = 0; i < 9; i++) {
+      const y = 410 + i * 26, hw = 58 + i * 17;
+      h += `<rect x="${180 - hw}" y="${y}" width="${hw * 2}" height="26" fill="url(#stair)" stroke="#a03545" stroke-opacity=".5"/>`;
+      for (const sd of [-1, 1]) for (let k = 0; k < 2; k++) {
+        if ((i + k) % 2) continue;
+        const cx = 180 + sd * (hw - 9 - k * 15), cy = y + 20, ch = 7 + i * 1.2;
+        h += `<circle cx="${cx}" cy="${cy - ch}" r="${9 + i * .7}" fill="url(#glow)" opacity=".7"><animate attributeName="opacity" values=".5;.9;.55" dur="${1.4 + (i % 3) * .5}s" repeatCount="indefinite"/></circle>
+          <rect x="${cx - 2.2}" y="${cy - ch}" width="4.4" height="${ch}" rx="1" fill="#f4e6c8"/><ellipse cx="${cx}" cy="${cy - ch - 3}" rx="1.8" ry="3.2" fill="#ffd36b"/>`;
+      }
+    }
+    /* chandelier */
+    h += `<g transform="translate(180 128)"><circle r="58" fill="url(#glow)" opacity=".8"><animate attributeName="opacity" values=".6;.95;.65" dur="2.4s" repeatCount="indefinite"/></circle>
+      <path d="M-4 -128 V-92" stroke="url(#gold)" stroke-width="2.5"/><path d="M-34 -64 Q0 -102 34 -64 Z" fill="url(#gold)"/>
+      <path d="M-52 -40 Q0 -90 52 -40 L40 -22 H-40 Z" fill="url(#gold)" opacity=".95"/><rect x="-60" y="-26" width="120" height="6" rx="3" fill="url(#gold)"/>`;
+    for (let i = -5; i <= 5; i++) h += `<rect x="${i * 10 - 1.5}" y="-40" width="3" height="11" fill="#f4e6c8"/><ellipse cx="${i * 10}" cy="-43" rx="1.8" ry="3.4" fill="#ffd36b"/><line x1="${i * 10}" y1="-19" x2="${i * 10}" y2="${-8 + (i % 2) * 10}" stroke="#f6e2a8" stroke-width="1.2"/><circle cx="${i * 10}" cy="${-6 + (i % 2) * 10}" r="2" fill="#fff4cf"/>`;
+    h += `</g>`;
+    /* roses along the bottom */
+    for (let i = 0; i < 46; i++) {
+      const x = (i * 17 + (i * 37 % 13)) % 380 - 10, y = 600 + ((i * 29) % 50) - (Math.abs(x - 180) < 80 ? 4 : 18), r = 17 + (i * 7) % 12;
+      h += `<g transform="translate(${x} ${y})"><circle r="${r}" fill="url(#rose)"/><path d="M${-r * .6} 0 Q0 ${-r * .7} ${r * .6} 0 Q0 ${r * .5} ${-r * .3} ${r * .1}" fill="none" stroke="#e0566f" stroke-opacity=".55" stroke-width="1.4"/><circle r="${r * .35}" fill="none" stroke="#e0566f" stroke-opacity=".5"/></g>`;
+    }
+    s.innerHTML = h; hall.appendChild(s);
+  }
+  function buildCurtains() {
+    $('#curL').style.background = velvet(1.3, 9); $('#curR').style.background = velvet(4.1, 9);
+    for (const id of ['curL', 'curR']) { const sh = document.createElement('div'); sh.className = 'shade'; $('#' + id).appendChild(sh); }
+    /* valance: three draped swags with gold fringe and rosettes between them */
+    const v = $('#valance'); let h = `<defs><linearGradient id="vg" x1="0" x2="1">${Array.from({ length: 24 }, (_, i) => `<stop offset="${i / 23}" stop-color="hsl(348 78% ${16 + 10 * Math.sin(i * 1.7)}%)"/>`).join('')}</linearGradient></defs>`;
+    for (let i = 0; i < 3; i++) {
+      const x = i * 120; h += `<path d="M${x} 0 H${x + 120} V34 Q${x + 60} 128 ${x} 34 Z" fill="url(#vg)"/>`;
+      for (let k = 1; k < 9; k++) { const fx = x + k * 13.3; h += `<path d="M${fx} 0 Q${fx + (k - 4.5) * 2.4} 60 ${x + 60 + (k - 4.5) * 5} ${34 + 66 * (1 - Math.abs(k - 4.5) / 5)}" fill="none" stroke="${k % 2 ? '#2a0410' : '#d0405a'}" stroke-opacity=".45" stroke-width="1.6"/>`; }
+      h += `<path d="M${x} 34 Q${x + 60} 128 ${x + 120} 34" fill="none" stroke="url(#gg)" stroke-width="2.4" opacity=".9"/>`;
+    }
+    h += `<defs><linearGradient id="gg"><stop offset="0" stop-color="#b98e3f"/><stop offset=".5" stop-color="#f6e2a8"/><stop offset="1" stop-color="#b98e3f"/></linearGradient></defs>`;
+    for (const x of [0, 120, 240, 360]) h += `<circle cx="${x}" cy="30" r="11" fill="#7d1230" stroke="#f6e2a8" stroke-width="1.5"/><circle cx="${x}" cy="30" r="5" fill="none" stroke="#f6e2a8" stroke-width="1"/><path d="M${x} 41 v22" stroke="#f6e2a8" stroke-width="3" stroke-dasharray="1 2.2"/>`;
+    v.innerHTML = h;
+  }
+  let skipOK = false, skipGo = null;
+  async function start() {
+    buildHall(); buildCurtains();
+    $('#iSmall').textContent = CONFIG.intro.small; $('#iBig').textContent = CONFIG.intro.big; $('#iName').textContent = CONFIG.name;
+    const intro = $('#intro'); intro.classList.add('on'); FX.setAmbient(true); FX.petals(14);
+    await sleep(1400); $('#curL').classList.add('open'); $('#curR').classList.add('open');
+    await sleep(3300);
+    const parts = ['#iSmall', '#iBig', '.i-photo', '#iName'];
+    for (const p of parts) { $(p, $('#itext')).classList.add('show'); await sleep(1100); if (p === '.i-photo') FX.burst(innerWidth / 2, innerHeight * .45, 40); }
+    $('#iSkip').classList.add('show'); skipOK = true;
+    await Promise.race([sleep(5200), new Promise(r => skipGo = r)]);
+    $('#iSkip').classList.remove('show'); $('#itext').style.transition = 'opacity 1.2s'; $('#itext').style.opacity = 0;
+    $('#curL').classList.remove('open'); $('#curR').classList.remove('open'); await sleep(3800);
+    intro.classList.add('off'); Scrap.show(); await sleep(1500); intro.style.display = 'none';
+  }
+  addEventListener('pointerup', () => { if (skipOK && skipGo) { skipOK = false; skipGo(); } });
+  return { start };
+})();
+</script>
+<script>
+/* =====================================================================
+   SCRAPBOOK — every element is hand-built SVG/HTML (positions in em; 36em = column width)
+   ===================================================================== */
+const Scrap = (() => {
+  const st = document.createElement('style');
+  st.textContent = `.rv{transform:translateY(2.4em) var(--t,rotate(0))}.rv.in{transform:var(--t,rotate(0))}
+  .playing .ic-play{display:none}.ic-pause{display:none}.playing .ic-pause{display:block}
+  .flame{transform-box:fill-box;transform-origin:50% 100%;animation:fl .18s ease-in-out infinite alternate}@keyframes fl{to{transform:scale(.88,1.12) rotate(3deg)}}
+  .out .flame{display:none}.smoke{opacity:0}.out .smoke{animation:sm 2.4s ease-out forwards}@keyframes sm{0%{opacity:.7;transform:translateY(0)}100%{opacity:0;transform:translateY(-26px)}}
+  .wish-btn{display:block;margin:0 auto}`;
+  document.head.appendChild(st);
+  const stage = $('#stage'), R = (a, b) => a + Math.random() * (b - a);
+  let n = 0;
+  /* add a positioned element; rot = degrees, as = tag, extra attrs */
+  function put(html, css, rot = 0, cls = '', tag = 'div', attrs = '') {
+    const e = document.createElement(tag); e.className = 'rv ' + cls; e.style.cssText = css + `;--t:rotate(${rot}deg)`; e.innerHTML = html;
+    if (attrs) attrs.split('|').forEach(a => { const [k, v] = a.split('='); e.setAttribute(k, v); }); stage.appendChild(e); return e;
+  }
+  /* scalloped / lobed outline around an ellipse */
+  function lobed(cx, cy, rx, ry, N, amp, fn) {
+    let d = ''; for (let i = 0; i <= 360; i++) { const t = i / 360 * 6.2832, k = Math.abs(Math.sin(N * t / 2)), a = amp * (fn ? fn(t) : 1) * k;
+      d += (i ? 'L' : 'M') + (cx + (rx + a) * Math.cos(t)).toFixed(1) + ' ' + (cy + (ry + a) * Math.sin(t)).toFixed(1); } return d + 'Z';
+  }
+  /* sample points along a path (needs DOM) */
+  function sample(d, count) {
+    const s = document.createElementNS(NS, 'svg'), p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.appendChild(p); document.body.appendChild(s);
+    const L = p.getTotalLength(), pts = Array.from({ length: count }, (_, i) => { const q = p.getPointAtLength(L * i / count); return [q.x, q.y]; }); s.remove(); return pts;
+  }
+  const silver = `<linearGradient id="sv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2f2ee"/><stop offset=".35" stop-color="#a9a9a4"/><stop offset=".6" stop-color="#e6e6e1"/><stop offset="1" stop-color="#8d8d89"/></linearGradient>`;
+  const paperG = `<linearGradient id="pp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1ece2"/><stop offset="1" stop-color="#ddd4c5"/></linearGradient>`;
+
+  function build() {
+    /* 1 · envelope + vinyl = music button */
+    put(`<svg viewBox="0 0 190 100" width="100%"><defs>${paperG}<radialGradient id="vn"><stop offset="0" stop-color="#2a2a2a"/><stop offset="1" stop-color="#050505"/></radialGradient></defs>
+      <rect x="0" y="12" width="190" height="88" fill="url(#pp)"/><path d="M0 12 L95 66 L190 12" fill="#f5f1e8" stroke="#cfc6b6"/>
+      <g transform="translate(66 36)"><g class="vinyl"><circle r="40" fill="url(#vn)"/><circle r="33" fill="none" stroke="#333"/><circle r="26" fill="none" stroke="#2c2c2c"/><circle r="19" fill="none" stroke="#333"/><circle r="14" fill="#6b1230"/><text y="4" text-anchor="middle" font-family="Pinyon Script,cursive" font-size="13" fill="#f3d9de">M</text></g>
+      <circle r="15" fill="rgba(240,240,240,.55)"/><path class="ic-play" d="M-4.5 -7 L8 0 L-4.5 7Z" fill="#fff"/><g class="ic-pause" fill="#fff"><rect x="-6" y="-7" width="4.2" height="14"/><rect x="2" y="-7" width="4.2" height="14"/></g></g>
+      <text x="120" y="70" font-size="10" letter-spacing="2.4" fill="#4a0b27" transform="rotate(-24 120 70)" font-family="Cormorant Garamond,serif">TAP TO PLAY</text></svg>`,
+      'left:4.4em;top:-.2em;width:19em;filter:drop-shadow(0 .5em .8em rgba(0,0,0,.45))', 0, 'hit', 'button', 'aria-label=Musique');
+    stage.lastChild.onclick = () => Music.toggle();
+
+    /* 2 · locket with ribbon */
+    const lk = (x, y, r, img, id) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(.56)"><path d="${HEART}" fill="url(#sv)" stroke="#777" stroke-width="1.2"/><clipPath id="${id}"><path d="${HEART}" transform="translate(9 8) scale(.82)"/></clipPath><image href="img/${img}.jpg" x="0" y="0" width="100" height="90" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/><path d="${HEART}" transform="translate(9 8) scale(.82)" fill="none" stroke="#fff" stroke-opacity=".6"/></g>`;
+    put(`<svg viewBox="0 0 125 125" width="100%"><defs>${silver}</defs>
+      <path d="M12 64 C-4 36 28 2 52 22 C70 38 28 46 44 16 C50 4 70 2 82 12" fill="none" stroke="#b9b2a7" stroke-width="7" stroke-linecap="round"/><path d="M12 64 C-4 36 28 2 52 22 C70 38 28 46 44 16 C50 4 70 2 82 12" fill="none" stroke="#e8e2d8" stroke-width="3.4" stroke-linecap="round"/>
+      ${lk(8, 64, -10, 'face_beach', 'lk1')}${lk(62, 50, 8, 'face_captain', 'lk2')}</svg>`, 'left:3.7em;top:7.8em;width:13em;filter:drop-shadow(0 .5em .7em rgba(0,0,0,.5))', -4);
+
+    /* 3 · embossed oval card */
+    const rosette = (x, y) => `<g transform="translate(${x} ${y})"><circle r="8" fill="#e7e1d6" stroke="#fff" stroke-opacity=".8" stroke-width="1" transform="translate(-.7 -.7)"/><circle r="8" fill="none" stroke="#9c9486" stroke-opacity=".5"/><circle r="5.4" fill="none" stroke="#9c9486" stroke-opacity=".45"/><circle r="2.8" fill="none" stroke="#9c9486" stroke-opacity=".5"/></g>`;
+    let ros = ''; for (let i = 0; i < 16; i++) { const t = i / 16 * 6.283; ros += rosette(90 + 86 * Math.cos(t), 128 + 122 * Math.sin(t)); }
+    put(`<svg viewBox="0 0 180 256" width="100%"><defs>${paperG}</defs>
+      <path d="${lobed(90, 128, 78, 112, 40, 6, t => 1 + .5 * Math.cos(2 * t))}" fill="url(#pp)" stroke="#fff" stroke-opacity=".7" transform="translate(-.8 -.8)"/><path d="${lobed(90, 128, 78, 112, 40, 6, t => 1 + .5 * Math.cos(2 * t))}" fill="url(#pp)" stroke="#a49a8a" stroke-opacity=".6"/>
+      ${ros}<ellipse cx="90" cy="128" rx="66" ry="98" fill="none" stroke="#fff" stroke-width="1.6" transform="translate(.8 .8)"/><ellipse cx="90" cy="128" rx="66" ry="98" fill="none" stroke="#a49a8a" stroke-opacity=".7" stroke-width="1.2"/></svg>`,
+      'left:16.2em;top:0;width:18em;filter:drop-shadow(0 .6em 1em rgba(0,0,0,.5))', 0);
+    const o = CONFIG.oval;
+    put(`<div class="cap">${o.top.join('<br>')}</div><div class="nm">${CONFIG.name}</div><div class="cap">${o.bottom.join('<br>')}</div>`, '', 0, 'oval-txt');
+
+    /* 4 · lace heart (Pourquoi je t'adore) */
+    const hp = sample(HEART, 70).map(([x, y]) => [x * 2, y * 2]);
+    let lace = hp.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9.5" fill="rgba(245,225,230,.28)" stroke="#f6eaee" stroke-opacity=".9" stroke-width="1.4"/>`).join('') +
+      hp.filter((_, i) => i % 2).map(([x, y]) => `<circle cx="${(x * .95 + 5).toFixed(1)}" cy="${(y * .95 + 4).toFixed(1)}" r="4" fill="none" stroke="#fff" stroke-opacity=".8"/>`).join('');
+    put(`<svg viewBox="-12 -12 224 204" width="100%"><defs><radialGradient id="hw" cx="40%" cy="30%"><stop offset="0" stop-color="#7a2146"/><stop offset="1" stop-color="#4c0c28"/></radialGradient></defs>
+      <path d="${HEART}" transform="scale(2)" fill="none" stroke="#a37483" stroke-width="12" opacity=".7"/>${lace}
+      <path d="${HEART}" transform="translate(16 14) scale(1.68)" fill="url(#hw)" stroke="#a86a83" stroke-opacity=".6" stroke-width="1"/>
+      <path d="${HEART}" transform="translate(26 22) scale(1.48)" fill="none" stroke="#000" stroke-opacity=".25" stroke-width="1.2"/></svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:.6em;color:#f3e6e8"><div style="font-family:var(--script);font-size:2.7em;line-height:.95;transform:rotate(-12deg)">Pourquoi<br>je t'adore</div><div style="font-size:1.05em;letter-spacing:.2em;margin-top:.2em;font-size:.9em;transform:rotate(-8deg)">CLIQUE ICI</div></div>`,
+      'left:3.4em;top:19.4em;width:20.4em;filter:drop-shadow(0 .6em 1em rgba(0,0,0,.5))', -3, 'hit', 'button', 'aria-label=Pourquoi je t\'adore');
+    stage.lastChild.onclick = () => Modal.open('reasons');
+
+    /* 5 · photobooth strip + amaranthus */
+    const ph = ['face_beach', 'face_captain', 'face_mirror'].map(i => `<div style="background-image:url(img/${i}.jpg)"></div>`).join('');
+    put(ph, '', 3, 'strip');
+    let am = ''; for (let i = 0; i < 46; i++) { const t = i / 46; am += `<circle cx="${(22 + 9 * Math.sin(t * 6 + 1) + R(-3, 3)).toFixed(1)}" cy="${(t * 205 + R(-2, 2)).toFixed(1)}" r="${R(3.2, 5.4).toFixed(1)}" fill="hsl(${R(66, 78).toFixed(0)} 38% ${R(48, 66).toFixed(0)}%)"/>`; }
+    put(`<svg viewBox="0 0 44 210" width="100%">${am}</svg>`, 'left:31.6em;top:18.2em;width:4.2em;filter:drop-shadow(0 .3em .4em rgba(0,0,0,.4))', 4, '');
+
+    /* 6 · tray + scalloped envelope (Ma lettre) */
+    put(`<svg viewBox="0 0 230 175" width="100%"><defs>${silver}${paperG}</defs>
+      <rect x="4" y="14" width="222" height="152" rx="30" fill="url(#sv)" stroke="#6f6f6b"/><rect x="14" y="24" width="202" height="132" rx="22" fill="#9a9a95" stroke="#e6e6e1" stroke-width="2"/>
+      <rect x="22" y="32" width="186" height="116" rx="16" fill="#bfbfba" opacity=".7"/>
+      <g transform="translate(34 38) rotate(-7 80 50)"><rect width="168" height="104" fill="url(#pp)" stroke="#c8bfae"/>
+        <path d="M0 0 H168 V52 Q150 84 128 66 Q108 92 84 74 Q60 92 40 66 Q18 84 0 52 Z" fill="#f3efe6" stroke="#c8bfae"/></g>
+      <path d="M26 88 Q40 150 92 170" fill="none" stroke="#7b8c5c" stroke-width="3"/><path d="M14 60 Q8 38 28 42 Q38 54 22 82 Q12 76 14 60Z" fill="#f8f6ef" stroke="#cfcabd" stroke-width=".8"/></svg>
+      <div style="position:absolute;left:18%;top:19%;width:60%;text-align:center;transform:rotate(-13deg);color:#6b1230"><div style="font-family:var(--script);font-size:3.6em;line-height:.95">Ma lettre<br>pour toi</div><div style="font-size:1.1em;letter-spacing:.22em;margin-top:.9em;color:var(--ink)">CLIQUE ICI</div></div>`,
+      'left:3.6em;top:36.6em;width:23em;filter:drop-shadow(0 .7em 1em rgba(0,0,0,.5))', 0, 'hit', 'button', 'aria-label=Ma lettre');
+    stage.lastChild.onclick = () => Modal.open('letter');
+    let seal = ''; for (let i = 0; i <= 120; i++) { const t = i / 120 * 6.283, r = 25 + 2.2 * Math.sin(t * 7) + 1.2 * Math.sin(t * 13); seal += (i ? 'L' : 'M') + (30 + r * Math.cos(t)).toFixed(1) + ' ' + (30 + r * Math.sin(t)).toFixed(1); }
+    put(`<svg viewBox="0 0 60 60" width="100%"><defs>${silver}</defs><path d="${seal}Z" fill="url(#sv)" stroke="#767672"/><circle cx="30" cy="30" r="17" fill="none" stroke="#777" stroke-width="1.4"/><circle cx="30" cy="30" r="17" fill="none" stroke="#fff" stroke-opacity=".7" transform="translate(.7 .7)"/><text x="30" y="38" text-anchor="middle" font-family="Pinyon Script,cursive" font-size="26" fill="#6e6e69">M</text></svg>`,
+      'left:27.2em;top:44.4em;width:6em;filter:drop-shadow(0 .3em .5em rgba(0,0,0,.5))', 8);
+
+    /* 7 · floral blob (Nos souvenirs) */
+    let bp = ''; const N = 22; for (let i = 0; i <= N; i++) { const t = i / N * 6.283, r = 60 + 14 * Math.sin(t * 5 + 1) + 9 * Math.sin(t * 9) + (i % 2 ? -7 : 5); const x = 80 + r * 1.2 * Math.cos(t), y = 72 + r * Math.sin(t); bp += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); }
+    put(`<svg viewBox="0 0 160 160" width="100%"><defs>${paperG}</defs><path d="${bp}Z" fill="url(#pp)" stroke="#a49a8a" stroke-opacity=".5" stroke-linejoin="round"/>
+      <path d="M70 128 Q66 150 74 160 M92 130 Q98 150 88 160" fill="none" stroke="#e7e1d6" stroke-width="5" stroke-linecap="round"/></svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6b1230;transform:rotate(-14deg);padding-bottom:1.5em"><div style="font-family:var(--script);font-size:3.2em;line-height:.95;text-align:center">Nos<br>souvenirs</div><div style="font-size:1.1em;letter-spacing:.22em;margin-top:.7em;color:var(--ink)">CLIQUE ICI</div></div>`,
+      'left:17.2em;top:49.6em;width:17em;filter:drop-shadow(0 .6em .9em rgba(0,0,0,.5))', 2, 'hit', 'button', 'aria-label=Nos souvenirs');
+    stage.lastChild.onclick = () => Modal.open('memories');
+
+    /* 8 · polaroids + torn paper + amaranthus */
+    put(`<img src="img/mirror.jpg" alt="" style="object-position:50% 30%">`, 'left:5em;top:54.6em;width:12.4em', -5, 'polaroid');
+    put(`<img src="img/beach.jpg" alt="" style="object-position:50% 45%">`, 'left:19.4em;top:68em;width:12.6em', 4, 'polaroid');
+    put(`<svg viewBox="0 0 80 60" width="100%"><path d="M2 6 L30 0 L46 8 L78 2 L74 30 L80 46 L48 58 L30 50 L4 56 L8 30Z" fill="#ece6da" stroke="#c9c0ae"/></svg>`, 'left:12.6em;top:67.6em;width:8em;filter:drop-shadow(0 .3em .5em rgba(0,0,0,.4))', -8);
+    let am2 = ''; for (let i = 0; i < 40; i++) { const t = i / 40; am2 += `<circle cx="${(20 + 8 * Math.sin(t * 5)).toFixed(1)}" cy="${(t * 170).toFixed(1)}" r="${R(3, 5).toFixed(1)}" fill="hsl(${R(66, 78).toFixed(0)} 38% ${R(48, 66).toFixed(0)}%)"/>`; }
+    put(`<svg viewBox="0 0 40 180" width="100%">${am2}</svg>`, 'left:1.4em;top:53.8em;width:3.6em', -6);
+  }
+
+  /* 9 · finale: make a wish */
+  function finale() {
+    const cp = sample(HEART, 56).map(([x, y]) => [x * 1.9, y * 1.9]);
+    const pipe = cp.map(([x, y]) => `<circle cx="${x.toFixed(1)}" cy="${(y + 14).toFixed(1)}" r="6.5" fill="#fbf4ec" stroke="#d9c9b6"/>`).join('');
+    const cand = [[70, 36], [95, 22], [120, 36]].map(([x, y], i) => `<g><rect x="${x - 3}" y="${y}" width="6" height="30" rx="1.5" fill="#f4e6c8" stroke="#c9b690"/><g class="flame"><ellipse cx="${x}" cy="${y - 7}" rx="3.4" ry="7" fill="#ffd36b" style="animation-delay:${i * .07}s"/><ellipse cx="${x}" cy="${y - 5}" rx="1.6" ry="3.6" fill="#fff6d6"/></g><circle class="smoke" cx="${x}" cy="${y - 8}" r="5" fill="#ddd"/></g>`).join('');
+    put(`<div class="cap" id="fCap">Make a wish</div><h2 id="fTitle">${CONFIG.name}</h2>
+      <button class="wish-btn hit" id="cake" type="button" aria-label="Souffler les bougies"><svg class="cake-wrap" viewBox="0 0 190 170"><defs><radialGradient id="ck" cx="40%" cy="30%"><stop offset="0" stop-color="#fffaf3"/><stop offset="1" stop-color="#eadccb"/></radialGradient></defs>
+      <path d="${HEART}" transform="translate(0 14) scale(1.9)" fill="url(#ck)" stroke="#d9c9b6"/>${pipe}${cand}
+      <circle cx="95" cy="86" r="8" fill="#b3123a"/><circle cx="62" cy="70" r="6" fill="#b3123a"/><circle cx="128" cy="70" r="6" fill="#b3123a"/><path d="M95 78 q4-10 9-12" stroke="#4a7a3a" fill="none" stroke-width="2"/></svg></button>
+      <p id="fP">Touche le gâteau pour souffler les bougies</p><div class="lbl-script" id="fSig" style="font-size:3.6em;color:var(--blush);opacity:0;transition:opacity 1.4s">— ${CONFIG.from}</div>`, '', 0, 'finale');
+    $('#cake').onclick = () => {
+      const b = $('#cake'); if (b.classList.contains('out')) return; b.classList.add('out'); const r = b.getBoundingClientRect();
+      FX.burst(r.left + r.width / 2, r.top + r.height / 3, 160); setTimeout(() => FX.burst(r.left + r.width * .3, r.top + r.height / 2, 90), 350); setTimeout(() => FX.burst(r.left + r.width * .7, r.top + r.height / 2, 90), 650);
+      $('#fCap').textContent = 'Joyeux anniversaire'; $('#fTitle').textContent = 'Que tous tes vœux se réalisent'; $('#fTitle').style.fontSize = '4.2em'; $('#fP').textContent = 'Je t\'aime fort, ma sweetheart ♡'; $('#fSig').style.opacity = 1;
+    };
+  }
+
+  function reveal() {
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12 });
+    stage.querySelectorAll('.rv').forEach((e, i) => { e.style.transitionDelay = (i < 9 ? i * .12 : 0) + 's'; io.observe(e); });
+    /* gentle parallax: elements drift at slightly different speeds */
+    if (!reduce) { const items = [...stage.querySelectorAll('.rv')].map((e, i) => [e, (i % 5 - 2) * .012]); let tk = false;
+      addEventListener('scroll', () => { if (tk) return; tk = true; requestAnimationFrame(() => { items.forEach(([e, k]) => e.style.translate = `0 ${(scrollY * k).toFixed(1)}px`); tk = false; }); }, { passive: true }); }
+  }
+  let built = false;
+  function show() { if (!built) { built = true; build(); finale(); } $('#scrap').classList.add('on'); scrollTo(0, 0); setTimeout(reveal, 60); FX.setAmbient(true); }
+  return { show };
+})();
+
+/* =====================================================================
+   MODAL — reasons / letter / memories
+   ===================================================================== */
+const Modal = (() => {
+  const m = $('#modal'), sh = $('#sheet');
+  function open(kind) {
+    let h = '<button class="x" type="button" aria-label="Fermer">×</button>';
+    if (kind === 'reasons') h += `<h3>Pourquoi je t'adore</h3><div class="rs">${CONFIG.reasons.map(([t, d], i) => `<div style="animation-delay:${i * .18}s"><b>${t}</b><span>${d}</span></div>`).join('')}</div>`;
+    if (kind === 'letter') h += `<h3>Ma lettre pour toi</h3><div class="letter">${CONFIG.letter.map((p, i) => `<p style="animation-delay:${i * .7}s">${p}</p>`).join('')}<div class="sig" style="animation:fadein 1s ${CONFIG.letter.length * .7}s both">${CONFIG.from}</div></div>`;
+    if (kind === 'memories') h += `<h3>Nos souvenirs</h3><div class="gal">${CONFIG.memories.map(([f, c]) => `<figure><img src="img/${f}.jpg" alt=""><figcaption>${c}</figcaption></figure>`).join('')}</div>`;
+    sh.innerHTML = h; m.classList.add('on'); sh.scrollTop = 0; FX.burst(innerWidth / 2, innerHeight / 2, 30);
+    $('.x', sh).onclick = close;
+  }
+  const close = () => m.classList.remove('on');
+  m.addEventListener('click', e => { if (e.target === m) close(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  return { open };
+})();
+</script>
+
+
+</body>
+</html>
